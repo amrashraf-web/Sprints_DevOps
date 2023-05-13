@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Courses</title>
+    </head>
+    <body>
+        <h1>Courses Details</h1>
+        <ul>
+            {% for cr in Ctd %}
+            <li>{{ cr.name }} & {{ cr.Subscription }} & {{ cr.type_of }}</li>
+            {% endfor %}
+        </ul>
+    </body>
+</html>

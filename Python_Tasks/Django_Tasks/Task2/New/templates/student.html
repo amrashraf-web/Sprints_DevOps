@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Students</title>
+    </head>
+    <body>
+        <h1>Students Details</h1>
+        <ul>
+            {% for st in Std %}
+            <li>{{ st.name }} | {{ st.age }} | {{ st.grade }} | {{ st.phone }} | {{ st.gender }}</li>
+            {% endfor %}
+        </ul>
+    </body>
+</html>
