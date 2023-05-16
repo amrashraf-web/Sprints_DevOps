@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+    <title>My List</title>
+    <body>
+        <h1>My Information</h1>
+        {% for data in myform %}
+        <li>
+            <ul> Name : {{data.Name}}</ul>
+            <ul>Email : {{data.Email}} </ul>
+            <ul>Phone : {{data.Phone}}</ul>
+            <ul>Gender : {{data.Gender}}</ul>
+        </li>
+        <hr>
+        {% endfor %}
+    </body>
+</html>

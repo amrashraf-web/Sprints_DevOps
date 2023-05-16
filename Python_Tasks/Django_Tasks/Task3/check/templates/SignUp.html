@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+    <title>SignUp_Form</title>
+    <body>
+        <h1>MyForm</h1>
+        <form action = "" method = "post">
+            {% csrf_token %}
+            {% for frm in myform %}
+                {{ frm.errors }}
+                <li>{{frm.name}} : {{frm}}</li>
+                <br>
+            {% endfor %}
+            <br>
+            <input type="submit" value="Submit" style="padding: 20px;margin: 20px;">
+           </form>
+    </body>
+</html>
