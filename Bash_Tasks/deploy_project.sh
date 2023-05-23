@@ -51,14 +51,9 @@ install_postgres(){
     sudo systemctl start postgresql
     sudo systemctl enable postgresql
     sudo systemctl status postgresql
-    sudo -u postgres createuser --interactive
+    sudo -u postgres psql -c "CREATE USER my_node WITH PASSWORD 'my_node';"
     sudo -u postgres createdb my_node
-    psql -U postgres -d my_node << EOF
-CREATE DATABASE my_node;
-    CREATE USER my_node WITH ENCRYPTED PASSWORD 'my_node';
-    GRANT ALL PRIVILEGES ON DATABASE my_node TO my_node;
-EOF
-echo "Table created successfully"
+    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE my_node TO my_node;"
 }
 
 
