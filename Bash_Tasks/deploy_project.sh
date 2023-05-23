@@ -84,7 +84,7 @@ build_UI() {
 modify_environment() {
     cd ..
     cd api
-    sed -i '/if (env === "demo") {/a\    process.env.HOST = "'"$IP_ADDRESS"'";\n    process.env.PGUSER = "my_node";\n    process.env.PGPASSWORD = "my_node";\n    process.env.PGHOST = "'"$IP_ADDRESS"'";\n    process.env.PGPORT = "5432";\n    process.env.PGDATABASE = "my_node";' webpack.config.js
+    sed -i "/if (env === "demo") {/a\    process.env.HOST = "'"$IP_ADDRESS"'";\n    process.env.PGUSER = "my_node";\n    process.env.PGPASSWORD = "my_node";\n    process.env.PGHOST = "'"$IP_ADDRESS"'";\n    process.env.PGPORT = "5432";\n    process.env.PGDATABASE = "my_node";" webpack.config.js
     ENVIRONMENT=demo npm run build
 }
 
