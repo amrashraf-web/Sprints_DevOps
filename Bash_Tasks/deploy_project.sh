@@ -1,4 +1,7 @@
 #!/bin/bash
+#### 
+# if you want to run this script to your local just edit my ip to your ip and edit my paths to your paths 
+####
 
 ## First Function For Creating User node
 create_user_node() {
