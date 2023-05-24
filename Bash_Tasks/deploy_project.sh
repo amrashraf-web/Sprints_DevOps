@@ -1,6 +1,9 @@
 #!/bin/bash
 #### 
-# if you want to run this script to your local just edit my ip to your ip and edit my paths to your paths 
+# if you want to run this script to your local
+# 1 - Edit my ip to your ip
+# 2 - Edit my paths to your paths
+# 3 - Edit my interface name To Your interface Name  >>  this mine : enp0s3
 ####
 
 ## First Function For Creating User node
