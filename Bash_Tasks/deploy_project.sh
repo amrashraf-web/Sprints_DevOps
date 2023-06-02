@@ -1,4 +1,10 @@
 #!/bin/bash
+#### 
+# if you want to run this script in your local machine
+# 1 - Edit my ip to your ip
+# 2 - Edit my paths to your paths
+# 3 - Edit my interface name To Your interface Name  >>  this mine : enp0s3
+####
 
 ## First Function For Creating User node
 create_user_node() {
