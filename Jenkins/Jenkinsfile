@@ -1,0 +1,14 @@
+pipeline {
+    agent any
+    parameters {
+        string(name: 'Name_Project', defaultValue: 'Deploy Jenknins Task 2', description: 'This For Depoying The Task')
+    }
+    stages {
+        stage('Test') {
+            steps {
+                echo "Parameter value: ${params.Name_Project}"
+                echo "Environment variable value: ${BUILD_NUMBER}"
+            }
+        }
+    }
+}
