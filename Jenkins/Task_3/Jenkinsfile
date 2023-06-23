@@ -11,11 +11,11 @@ pipeline {
                 echo "Environment variable value: ${BUILD_NUMBER}"
             }
         }
-    }
-  
         stage('Stage For Shared Library') {
           myStep()
           echo "Done Shared Library SuccessFully"
         }
+    }
+  
 
 }
