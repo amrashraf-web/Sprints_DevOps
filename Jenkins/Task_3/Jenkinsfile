@@ -1,0 +1,21 @@
+@Library('Task_3') _
+pipeline {
+    agent any
+    parameters {
+        string(name: 'Name_Project', defaultValue: 'Deploy Jenknins Task 2', description: 'This For Depoying The Task')
+    }
+    stages {
+        stage('Test') {
+            steps {
+                echo "Parameter value: ${params.Name_Project}"
+                echo "Environment variable value: ${BUILD_NUMBER}"
+            }
+        }
+    }
+  
+    stage('Stage For Shared Library') {
+      myStep()
+      echo "Done Shared Library SuccessFully 
+    }
+
+}
