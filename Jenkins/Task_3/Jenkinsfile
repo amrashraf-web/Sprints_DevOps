@@ -12,9 +12,11 @@ pipeline {
             }
         }
         stage('Stage For Shared Library') {
-          myStep()
-          echo "Done Shared Library SuccessFully"
-        }
+            steps {
+              myStep()
+              echo "Done Shared Library SuccessFully"
+            }
+        }    
     }
   
 
