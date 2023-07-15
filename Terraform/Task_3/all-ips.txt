@@ -1,0 +1,4 @@
+1 - public-ip1 44.213.107.149
+2 - public-ip2 44.204.84.16
+3 - private-ip1 10.0.1.83
+4 - private-ip2 10.0.3.181
