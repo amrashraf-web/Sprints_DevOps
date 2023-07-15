@@ -1,0 +1,65 @@
+- name: Install NGINX and configure
+  hosts: servers
+  become: true
+
+  tasks:
+    - name: Install NGINX
+      apt:
+        name: nginx
+        state: present
+      become: true
+
+    - name: Change default NGINX configuration
+      become: true
+      blockinfile:
+        path: /etc/nginx/sites-available/default
+        block: |
+          server {
+              listen 8090 default_server;
+              listen [::]:8090 default_server;
+              server_name _;
+              root /var/www/html;
+              location / {
+                  index index.html index.htm index.nginx-debian.html;
+              }
+          }
+      notify:
+        - Restart NGINX
+
+    - name: Copy custom index.html
+      become: true
+      copy:
+        src: index.html
+        dest: /var/www/html/index.html
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+      become: true
+
+    - name: Install Node.js and npm
+      apt:
+        name: ["nodejs", "npm"]
+        state: present
+
+    - name: Clone the app repository
+      git:
+        repo: https://github.com/sabreensalama/dockerize-node-app-task
+        dest: /opt/dockerize-node-app-task
+        version: main
+      become: true
+
+    - name: Install app dependencies
+      npm:
+        path: /opt/dockerize-node-app-task
+        state: latest
+
+    - name: Start the app
+      shell: node /opt/dockerize-node-app-task/server.js &
+
+  handlers:
+    - name: Restart NGINX
+      become: true
+      service:
+        name: nginx
+        state: restarted
