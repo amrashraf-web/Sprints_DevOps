@@ -1,5 +1,3 @@
-# modules/ec2_instances/variables.tf
-
 variable "public_subnet_ids" {
   description = "Public Subnet IDs"
   type        = list(string)
