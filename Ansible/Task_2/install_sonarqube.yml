@@ -1,0 +1,239 @@
+- name: Install SonarQube
+  hosts: public_server
+  gather_facts: true
+  become: true
+
+  tasks:
+    - name: Connect to private server and install SonarQube
+      delegate_to: private_server
+      remote_user: ubuntu
+      vars:
+        ansible_ssh_common_args: "-o ProxyJump={{ hostvars['public_server']['ansible_user'] }}@{{ hostvars['public_server']['ansible_host'] }}"
+        ansible_ssh_private_key_file: "{{ hostvars['public_server']['ansible_ssh_private_key_file'] }}"
+        sonarqube_version: 9.6.1.59531
+        sonarqube_download_url: "https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-{{ sonarqube_version }}.zip"
+        postgres_password: MyPassword@123
+        lsb_release: "{{ hostvars['public_server']['ansible_distribution_release'] }}"
+
+      block:
+        - name: Update apt cache
+          apt:
+            name: python3-psycopg2
+            update_cache: yes
+
+        - name: Install OpenJDK 11
+          apt:
+            name: openjdk-11-jdk
+            state: present
+
+        - name: Import PostgreSQL repository key
+          apt_key:
+            url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+            state: present
+
+        - name: Add PostgreSQL repository
+          apt_repository:
+            repo: "deb http://apt.postgresql.org/pub/repos/apt {{ lsb_release }}-pgdg main"
+            state: present
+
+        - name: Update apt repository list
+          apt:
+            update_cache: yes
+
+        - name: Install PostgreSQL 15
+          apt:
+            name:
+              - postgresql
+              - postgresql-contrib
+            state: present
+
+        - name: Configure Firewall
+          ufw:
+            rule: allow
+            port: "{{ item }}"
+          loop:
+            - http
+            - https
+
+        - name: Check firewall status
+          command: ufw status
+          register: ufw_status
+
+        - name: Debug firewall status
+          debug:
+            var: ufw_status.stdout_lines
+
+        - name: Modify pg_hba.conf for password-based authentication
+          lineinfile:
+            path: /etc/postgresql/15/main/pg_hba.conf
+            regexp: "^local\\s+all\\s+all\\s+(peer|local)"
+            line: "local    all    all    md5"
+            state: present
+          become: true
+
+        - name: Restart PostgreSQL service
+          service:
+            name: postgresql
+            state: restarted
+          become: true
+
+        - name: Check if sonaruser role already exists in PostgreSQL
+          command: >
+            sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='sonaruser'"
+          register: sonaruser_check
+          changed_when: false
+          failed_when: false
+          become: true
+
+        - name: Create sonaruser role in PostgreSQL if it doesn't exist
+          command: >
+            sudo -u postgres psql -c "CREATE ROLE sonaruser WITH LOGIN ENCRYPTED PASSWORD '{{ postgres_password }}'"
+          become: true
+          when: sonaruser_check.stdout != '1'
+
+        - name: Check if sonarqube database already exists in PostgreSQL
+          command: >
+            sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='sonarqube'"
+          register: sonarqube_check
+          changed_when: false
+          failed_when: false
+          become: true
+
+        - name: Create sonarqube database in PostgreSQL if it doesn't exist
+          command: >
+            sudo -u postgres psql -c "CREATE DATABASE sonarqube OWNER sonaruser"
+          become: true
+          when: sonarqube_check.stdout != '1'
+
+        - name: Install unzip package
+          package:
+            name: unzip
+            state: present
+          become: true
+
+        - name: Download SonarQube
+          get_url:
+            url: "{{ sonarqube_download_url }}"
+            dest: "/tmp/sonarqube-{{ sonarqube_version }}.zip"
+
+        - name: Unzip SonarQube
+          unarchive:
+            src: "/tmp/sonarqube-{{ sonarqube_version }}.zip"
+            dest: /opt
+            remote_src: yes
+            extra_opts: "-q"
+            creates: "/opt/sonarqube-{{ sonarqube_version }}"
+
+        - name: Remove existing SonarQube directory
+          file:
+            path: /opt/sonarqube
+            state: absent
+
+        - name: Move SonarQube files
+          command: mv "/opt/sonarqube-{{ sonarqube_version }}" /opt/sonarqube
+
+        - name: Delete downloaded SonarQube archive
+          file:
+            path: "/tmp/sonarqube-{{ sonarqube_version }}.zip"
+            state: absent
+
+        - name: Create sonarqube system user
+          user:
+            name: sonarqube
+            system: yes
+            shell: /bin/false
+
+        - name: Set ownership for SonarQube directory
+          file:
+            path: /opt/sonarqube
+            owner: sonarqube
+            group: sonarqube
+            recurse: yes
+
+        - name: Configure SonarQube properties
+          lineinfile:
+            path: /opt/sonarqube/conf/sonar.properties
+            line: "{{ item.line }}"
+            state: "{{ item.state }}"
+          loop:
+            - { line: "sonar.jdbc.username=sonaruser", state: "present" }
+            - {
+                line: "sonar.jdbc.password={{ postgres_password }}",
+                state: "present",
+              }
+            - {
+                line: "sonar.jdbc.url=jdbc:postgresql://localhost:5432/sonarqube",
+                state: "present",
+              }
+            - { line: "sonar.web.javaAdditionalOpts=-server", state: "present" }
+            - { line: "sonar.web.host=127.0.0.1", state: "present" }
+
+        - name: Increase virtual memory for Elasticsearch
+          lineinfile:
+            path: /etc/sysctl.conf
+            line: "{{ item }}"
+          loop:
+            - "vm.max_map_count=524288"
+            - "fs.file-max=131072"
+          notify: Reload sysctl
+
+        - name: Create limits configuration directory
+          file:
+            path: /etc/security/limits.d
+            state: directory
+            mode: "0755"
+          become: true
+
+        - name: Create limits configuration for sonarqube user
+          lineinfile:
+            path: /etc/security/limits.d/99-sonarqube.conf
+            line: "{{ item }}"
+            create: yes
+          loop:
+            - "sonarqube   -   nofile   131072"
+            - "sonarqube   -   nproc    8192"
+
+        - name: Reboot the system
+          command: reboot
+          async: 0
+          poll: 0
+          ignore_errors: true
+          changed_when: false
+
+        - name: Wait for the system to reboot
+          wait_for_connection:
+
+        - name: Setup SonarQube service
+          copy:
+            content: |
+              [Unit]
+              Description=SonarQube service
+              After=syslog.target network.target
+
+              [Service]
+              Type=forking
+              ExecStart=/opt/sonarqube/bin/linux-x86-64/sonar.sh start
+              ExecStop=/opt/sonarqube/bin/linux-x86-64/sonar.sh stop
+              User=sonarqube
+              Group=sonarqube
+              PermissionsStartOnly=true
+              Restart=always
+              StandardOutput=syslog
+              LimitNOFILE=131072
+              LimitNPROC=8192
+              TimeoutStartSec=5
+              SuccessExitStatus=143
+
+              [Install]
+              WantedBy=multi-user.target
+            dest: /etc/systemd/system/sonarqube.service
+
+        - name: Start SonarQube service
+          systemd:
+            name: sonarqube
+            state: started
+            enabled: yes
+
+  handlers:
+    - name: Reload sysctl
+      command: sysctl --system
